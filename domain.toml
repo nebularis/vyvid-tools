@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT
+name = "tools"
+description = "How to do things with the tools a developer uses, such as mise, uv, cabal and ghc, each note measured or run"
+visibility = "public"
+rules = []
+
+[families]
+NOTE = { defined = "notes.md", type = "note" }
+
+[[recipes]]
+name = "how-do-i"
+description = "When asking how to do something with a tool"
+budget = 1200
+steps = [
+  { step = "find", words = "{question}", kind = "note", limit = 6 },
+  { step = "take", n = 4 },
+]
