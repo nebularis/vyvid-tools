@@ -2,6 +2,8 @@
 
 # Vyvid Tools Domain
 
+Вивід: домен інструментів розробки
+
 Вивід: домен інструментів розробника
 
 This domain holds notes on how to do things with the tools a developer uses, kept so that any project can use them. It has one register.
