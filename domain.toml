@@ -15,3 +15,12 @@ steps = [
   { step = "find", words = "{question}", kind = "note", limit = 6 },
   { step = "take", n = 4 },
 ]
+
+[skill_values]
+maintainer = "the maintainer"
+developer_guide = "docs/developer-guide.md"
+getting_started = "docs/getting-started.md"
+other_authorities = "Any other package manager the project uses"
+packages = "one of the project's packages"
+import_check = "import <package>; print(<package>.__file__)"
+test_results = ".build/test-results/"
