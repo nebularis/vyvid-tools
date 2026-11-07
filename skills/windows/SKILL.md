@@ -1,6 +1,6 @@
 ---
 name: windows
-description: Windows-specific problems in development tools. Use when a tool reads or writes text on Windows, when mise shims fail, when a task's command runs only partly, when long paths, PowerShell quoting or a persistent terminal misbehave, or when a toolchain's PATH order matters.
+description: Windows-specific problems in development tools. Use when a tool reads or writes text on Windows, when mise shims fail, when a task's command runs only partly, when a tool links a directory, when long paths, PowerShell quoting or a persistent terminal misbehave, or when a toolchain's PATH order matters.
 ---
 
 # Tools on Windows
@@ -24,6 +24,12 @@ description: Windows-specific problems in development tools. Use when a tool rea
 
 - **Long paths are often off.** Install large toolchains, such as GHC or opam, under a short root.
 - **Ruby's native gems need MSYS2.** `bundle install` fails with "MSYS2 could not be found" until `ridk install` has installed MSYS2 and its MINGW toolchain.
+
+## Directory links
+
+- **Try a symbolic link, then a directory junction, then a copy.** A symbolic link needs the "Create symbolic links" right, held by an elevated administrator, or Developer Mode, and is refused otherwise with error 1314. A junction needs only the right to create a directory where it goes (NOTE-14). A copy is the fallback where neither can be made, such as on FAT32 or exFAT, on a network share, or under a policy or security tool that refuses reparse points. Report which was made, and mark a copy so the tool can replace it later.
+- **A junction links a directory on a local volume, by absolute path.** Moving the target leaves it dangling, where `Path.exists()` is false and `Path.is_junction()` still true, so test for the link before testing that it exists.
+- **Remove a link, never its target.** Test `is_symlink()` or `is_junction()` first and `unlink()` it. `shutil.rmtree` refuses a junction and does not enter one inside a tree (NOTE-15), but older tools are not known to be as careful.
 
 ## PowerShell
 

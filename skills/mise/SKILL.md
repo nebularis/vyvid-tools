@@ -1,6 +1,6 @@
 ---
 name: mise
-description: Using mise as the one entry point for build, test and check tasks, setting up shells and keeping the code under test the checkout's own. Use when running or choosing mise tasks, when a build, test or package install problem appears, when adding a mise task, or before running anything that imports the project's Python packages.
+description: Using mise to run a project's build, test and check tasks, setting up shells and keeping the code under test the checkout's own. Use when running or choosing mise tasks, when a build, test or package install problem appears, when adding a mise task, or before running anything that imports the project's Python packages.
 ---
 
 # The mise toolchain
@@ -9,27 +9,21 @@ This skill's tasks span the activities environment, build-automation, dependency
 
 The [developer guide]({{developer_guide}}) describes every tool and task, and [getting started]({{getting_started}}) the first setup. Read them rather than guessing a command. Lessons from past environment problems are in the skill `environment-lessons`.
 
-## mise is the one entry point
+## Running tasks
 
-- Every build, test and check runs through `mise`. CI runs the same tasks. {{other_authorities}} remain their own dependency authorities.
-- `mise install`, `mise run bootstrap`, `mise run check`, and `mise tasks` to list them.
-- Those two commands are all `check` needs. A `check:*` task that reads an artefact a build writes names that build in its `depends`. A suite failing on a missing generated file is an undeclared dependency to add in `mise.toml`, never a file to stage by hand.
-- Task families are `bootstrap:*`, `check:*`, `build:*` and `clean:*`. Some heavy checks are deliberately outside `check`, as the developer guide lists.
-- Run the checks a change needs, not only the aggregate. `mise run check` stops every sibling task as soon as one fails, so a known-broken task hides the rest. Run the remaining `check:*` tasks one by one for a true picture.
+- `mise tasks` lists a project's tasks, and `mise run <task>` runs one with the tools and environment `mise.toml` declares.
+- A task that reads an artefact a build writes names that build in its `depends`. A suite failing on a missing generated file is an undeclared dependency to add in `mise.toml`, never a file to stage by hand.
+- `mise run` stops every sibling task as soon as one fails, so a known-broken task hides the rest. `mise run --continue-on-error <task>` runs them all and reports every failure (NOTE-11).
 
 ## Is the code under test this checkout's?
 
-Each checkout, git worktrees included, has its own `.venv`, which `mise.toml` creates and which `mise run`, `mise exec` and an activated shell use. A bare `python` in a shell without mise activated is the global interpreter, whose editable installs can point at another clone. So run Python through `mise run` or `mise exec -- python`, and before running anything that imports {{packages}}:
+Where `mise.toml` creates a virtual environment per checkout (`_.python.venv`), `mise run`, `mise exec` and an activated shell use it, and a bare `python` in a shell without mise activated is the global interpreter, whose editable installs can point at another clone. So run Python through `mise run` or `mise exec -- python`, and before running anything that imports {{packages}}:
 
 ```bash
 mise exec -- python -c "{{import_check}}"
 ```
 
-Every path must be inside this checkout. If not, or if the import fails, run `mise run bootstrap` in this checkout.
-
-## A running process and the build
-
-A build never writes a file that a running process has open. A JVM reads classes from its jar for as long as it runs, so a build that rewrites the jar under it leaves it failing with `NoClassDefFoundError` on the first class it had not loaded yet. A process started from the repository runs from a copy of what the build wrote, made just before it starts. A process that has to run from the build output itself is stopped before the build, and the task that starts it says so.
+Every path must be inside this checkout. If not, or if the import fails, install the project's packages again in this checkout.
 
 ## Shell activation
 
@@ -42,7 +36,7 @@ Installing `mise` is not enough. A new shell has no `mise`-managed tools on `PAT
 ## Rules for tasks and tools
 
 - `mise.toml` `run` strings run under `cmd.exe` on Windows and a POSIX shell elsewhere. Use double quotes around arguments with shell-special characters (`"./pkg[test]"`), and never rely on a shell glob. Enumerate files explicitly.
-- A Windows-only variant of a task uses `run_windows` with `shell = "powershell -c"`. Start its script with `$ErrorActionPreference = "SilentlyContinue"` and end it with `exit 0`, because PowerShell exits 1 after any suppressed non-terminating error.
+- A task that needs more than plain commands, such as a variable, a loop, a redirect or a multi-line script, or that reads or writes text whose encoding or line endings matter, is portable as a script in a language the project already runs, not as inline shell. A sequence of plain commands is a `run` array, one command per entry, with `dir` instead of `cd`.
+- Where a task truly has no portable form, such as a platform's own installer, its Windows variant is `run_windows` with `shell = "powershell -c"`. `$ErrorActionPreference = "SilentlyContinue"` with a closing `exit 0` suits only a clean-up that may find nothing to remove, since it reports success whatever failed.
 - A tool that prints a repository-relative path for comparison prints `Path.as_posix()`.
-- Ask {{maintainer}} to start Docker Desktop if its engine is not running. Do not start it yourself.
 - After changing a list other code counts or iterates over, such as a task's test modules, a version pin, or a set whose size a test asserts, run every task and test that reads that list, not only the one you edited. A merge resolution once left a task skipping two test modules without failing, and a contract added beyond a pinned count was caught only by the full sweep.
